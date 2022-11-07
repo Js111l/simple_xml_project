@@ -1,4 +1,5 @@
 import java.io.*;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,11 +14,11 @@ public final class ProcessFile {
     private static boolean plnFlag;
 
     public static void setEuroFlag(boolean eur) {
-        euroFlag = eur;
+        euroFlag = eur == Boolean.TRUE ? true : false;
     }
 
     public static void setPlnFlag(boolean pln) {
-        plnFlag = pln;
+        plnFlag = pln == Boolean.TRUE ? true : false;
     }
 
     public static void process(File dtd, File xsd) throws IOException {
@@ -30,8 +31,8 @@ public final class ProcessFile {
             listDtd.add(7, "        <!ELEMENT priceEUR (#PCDATA)>");
             listDtd.add(8, "        <!ELEMENT pricePLN (#PCDATA)>");
             File newDtd = new File("validate.dtd");
-            Files.write(Path.of("validate.dtd"), listDtd, StandardCharsets.UTF_8);
             newDtd.createNewFile();
+            Files.write(Path.of("validate.dtd"), listDtd, StandardCharsets.UTF_8);
 
             List<String> listXsd = new LinkedList<>();
             listXsd = Files.readAllLines(Path.of("validate_xsd.xsd"));
