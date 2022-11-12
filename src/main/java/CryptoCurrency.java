@@ -27,6 +27,7 @@ final class CryptoCurrency {
     public CryptoCurrency(){
 
     }
+
     private CryptoCurrency(CryptoCurrencyBuilder builder) {
         this.name = builder.name;
         this.symbol = builder.symbol;

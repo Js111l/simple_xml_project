@@ -1,10 +1,8 @@
-import com.sun.xml.bind.api.impl.NameConverter;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
-
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -23,8 +21,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.BufferOverflowException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,63 +41,63 @@ class Input {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
+        File dtdFile = new File("validate.dtd");
+        dtdFile.createNewFile();
+        FileWriter writerDtd = new FileWriter(dtdFile, true);
+        String defaultDtdContent = "<!ELEMENT cryptoStatistics (nrOfCurrencies,currency+)>\n" +
+                "        <!ATTLIST cryptoStatistics sourceApi CDATA #REQUIRED>\n" +
+                "        <!ELEMENT nrOfCurrencies (#PCDATA)>\n" +
+                "        <!ELEMENT currency (symbol,priceUSD,dateAdded,supply)>\n" +
+                "        <!ATTLIST currency name CDATA #REQUIRED>\n" +
+                "        <!ELEMENT symbol (#PCDATA)>\n" +
+                "        <!ELEMENT priceUSD (#PCDATA)>\n" +
+                "        <!ELEMENT dateAdded (#PCDATA)>\n" +
+                "        <!ELEMENT supply (max_supply,circulating_supply,total_supply)>\n" +
+                "        <!ELEMENT max_supply (#PCDATA)>\n" +
+                "        <!ELEMENT circulating_supply (#PCDATA)>\n" +
+                "        <!ELEMENT total_supply (#PCDATA)>";
+
+        writerDtd.append(defaultDtdContent);
+        writerDtd.close();
+
+
+        File xsdFile = new File("validate_xsd.xsd");
+        xsdFile.createNewFile();
+        FileWriter writerXsd = new FileWriter(xsdFile, true);
+        String defaultXsdContent = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+                "<xs:schema attributeFormDefault=\"unqualified\" elementFormDefault=\"qualified\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\n" +
+                "    <xs:element name=\"cryptoStatistics\">\n" +
+                "        <xs:complexType>\n" +
+                "            <xs:sequence>\n" +
+                "                <xs:element name=\"nrOfCurrencies\" type=\"xs:unsignedByte\" />\n" +
+                "                <xs:element maxOccurs=\"unbounded\" name=\"currency\">\n" +
+                "                    <xs:complexType>\n" +
+                "                        <xs:sequence>\n" +
+                "                            <xs:element name=\"symbol\" type=\"xs:string\" />\n" +
+                "                            <xs:element name=\"priceUSD\" type=\"xs:string\" />\n" +
+                "                            <xs:element name=\"dateAdded\" type=\"xs:string\" />\n" +
+                "                            <xs:element name=\"supply\">\n" +
+                "                                <xs:complexType>\n" +
+                "                                    <xs:sequence>\n" +
+                "                                        <xs:element name=\"max_supply\" type=\"xs:string\" />\n" +
+                "                                        <xs:element name=\"circulating_supply\" type=\"xs:decimal\" />\n" +
+                "                                        <xs:element name=\"total_supply\" type=\"xs:decimal\" />\n" +
+                "                                    </xs:sequence>\n" +
+                "                                </xs:complexType>\n" +
+                "                            </xs:element>\n" +
+                "                        </xs:sequence>\n" +
+                "                        <xs:attribute name=\"name\" type=\"xs:string\" use=\"required\" />\n" +
+                "                    </xs:complexType>\n" +
+                "                </xs:element>\n" +
+                "            </xs:sequence>\n" +
+                "            <xs:attribute name=\"sourceApi\" type=\"xs:string\" use=\"required\" />\n" +
+                "        </xs:complexType>\n" +
+                "    </xs:element>\n" +
+                "</xs:schema>";
+        writerXsd.append(defaultXsdContent);
+        writerXsd.close();
+
         while (true) {
-            File dtdFile=new File("validate.dtd");
-            dtdFile.createNewFile();
-            FileWriter writerDtd=new FileWriter(dtdFile,true);
-            String defaultDtdContent = "<!ELEMENT cryptoStatistics (nrOfCurrencies,currency+)>\n" +
-                    "        <!ATTLIST cryptoStatistics sourceApi CDATA #REQUIRED>\n" +
-                    "        <!ELEMENT nrOfCurrencies (#PCDATA)>\n" +
-                    "        <!ELEMENT currency (symbol,priceUSD,dateAdded,supply)>\n" +
-                    "        <!ATTLIST currency name CDATA #REQUIRED>\n" +
-                    "        <!ELEMENT symbol (#PCDATA)>\n" +
-                    "        <!ELEMENT priceUSD (#PCDATA)>\n" +
-                    "        <!ELEMENT dateAdded (#PCDATA)>\n" +
-                    "        <!ELEMENT supply (max_supply,circulating_supply,total_supply)>\n" +
-                    "        <!ELEMENT max_supply (#PCDATA)>\n" +
-                    "        <!ELEMENT circulating_supply (#PCDATA)>\n" +
-                    "        <!ELEMENT total_supply (#PCDATA)>";
-
-            writerDtd.append(defaultDtdContent);
-            writerDtd.close();
-
-
-            File xsdFile=new File("validate_xsd.xsd");
-            xsdFile.createNewFile();
-            FileWriter writerXsd=new FileWriter(xsdFile,true);
-            String defaultXsdContent="<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                    "<xs:schema attributeFormDefault=\"unqualified\" elementFormDefault=\"qualified\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\n" +
-                    "    <xs:element name=\"cryptoStatistics\">\n" +
-                    "        <xs:complexType>\n" +
-                    "            <xs:sequence>\n" +
-                    "                <xs:element name=\"nrOfCurrencies\" type=\"xs:unsignedByte\" />\n" +
-                    "                <xs:element maxOccurs=\"unbounded\" name=\"currency\">\n" +
-                    "                    <xs:complexType>\n" +
-                    "                        <xs:sequence>\n" +
-                    "                            <xs:element name=\"symbol\" type=\"xs:string\" />\n" +
-                    "                            <xs:element name=\"priceUSD\" type=\"xs:string\" />\n" +
-                    "                            <xs:element name=\"dateAdded\" type=\"xs:string\" />\n" +
-                    "                            <xs:element name=\"supply\">\n" +
-                    "                                <xs:complexType>\n" +
-                    "                                    <xs:sequence>\n" +
-                    "                                        <xs:element name=\"max_supply\" type=\"xs:string\" />\n" +
-                    "                                        <xs:element name=\"circulating_supply\" type=\"xs:decimal\" />\n" +
-                    "                                        <xs:element name=\"total_supply\" type=\"xs:decimal\" />\n" +
-                    "                                    </xs:sequence>\n" +
-                    "                                </xs:complexType>\n" +
-                    "                            </xs:element>\n" +
-                    "                        </xs:sequence>\n" +
-                    "                        <xs:attribute name=\"name\" type=\"xs:string\" use=\"required\" />\n" +
-                    "                    </xs:complexType>\n" +
-                    "                </xs:element>\n" +
-                    "            </xs:sequence>\n" +
-                    "            <xs:attribute name=\"sourceApi\" type=\"xs:string\" use=\"required\" />\n" +
-                    "        </xs:complexType>\n" +
-                    "    </xs:element>\n" +
-                    "</xs:schema>";
-            writerXsd.append(defaultXsdContent);
-            writerXsd.close();
-
             System.out.println(" * type:  \n" +
                     "   *  \"generate\" to generate new xml file with top 100 crypto prices *\n" +
                     "   *  \"open file_name\" to open specific file *\n" +
@@ -127,7 +123,9 @@ class Input {
                     if (pln.toLowerCase(Locale.ROOT).equals("y")) {
                         includePln = true;
                     }
-                    Crypto_api.getDataFromApiToXml();
+                    Crypto_api.getDataFromApiToPojo();
+                    Crypto_api.createXmlFile();
+                    Crypto_api.javaToXml();
                     System.out.println("file created! ");
                     System.out.println("created:\n" +
                             "prices.xml");
@@ -142,11 +140,13 @@ class Input {
                 File xmlFile = new File(fileName);
                 if (xmlFile.exists()) {
                     BufferedReader reader = new BufferedReader(new FileReader(xmlFile));
-                    while (reader.readLine() != null) {
-                        System.out.println(reader.readLine());
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println(line);
                     }
                 }
             }
+
             if (input.equals("show files")) {
                 DirectoryStream<Path> pathDirectoryStream =
                         Files.newDirectoryStream(Path.of("C:\\simple_XML_project"), x -> x.getFileName()
@@ -173,11 +173,11 @@ class Input {
                 }
             }
             if (input.equals("quit")) {
-                File dtdToDelete=new File("validate.dtd");
+                File dtdToDelete = new File("validate.dtd");
                 dtdToDelete.delete();
-                File xsdToDelete=new File("validate_xsd.xsd");
+                File xsdToDelete = new File("validate_xsd.xsd");
                 xsdToDelete.delete();
-                File xmlToDelete=new File("prices.xml");
+                File xmlToDelete = new File("prices.xml");
                 xmlToDelete.delete();
                 break;
             }
@@ -202,8 +202,13 @@ class Input {
 //Simple console app that takes data about cryptocurrencies from Api, saves specific data to Java classes and then creates
 //xml file using JAXB library, which enables mapping between xml files nad Java objects.
 // After the xml file is created, you can validate xml with dtd file and xsd schema file.
+class Connection {
+    private Connection() {
 
-public final class Crypto_api {
+    }
+
+    public final HttpResponse<String> response = connection();
+
     private static HttpResponse<String> connection() { //method responsible for setting up connection
         // if connection is successful it returns the response
         HttpResponse<String> response = null;
@@ -212,18 +217,34 @@ public final class Crypto_api {
                     (URI.create("https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"))
                     .header("X-CMC_PRO_API_KEY", "4e17aa40-259d-4214-89a9-b8cd8dad7198").GET().build();
             response = HttpClient.newBuilder().build().send(request, HttpResponse.BodyHandlers.ofString());
+            System.out.println("Success!");
         } catch (Exception e) {
             e.printStackTrace();
         }
         return response;
     }
 
+    private static Connection connection;
 
-    private static Set<CryptoCurrency> getDataFromApiToPojo() throws IOException {
+    public static Connection GetInstance() {
+        if (connection == null) {
+            connection = new Connection();
+        }
+        return connection;
+    }
+}
+
+
+public final class Crypto_api {
+    private static String response = Connection.GetInstance().response.body();
+    private static Set<CryptoCurrency> cryptoCurrencies;
+
+    protected static void getDataFromApiToPojo () throws IOException {
         //retrieves data from api and saves to Java objects
-        JSONObject object = new JSONObject(connection().body()); //gets data from connection
+        JSONObject object = new JSONObject(response); //gets data from connection
         JSONArray array = new JSONArray(object.get("data").toString());
         Set<CryptoCurrency> cryptoSet = new HashSet<>();
+
         for (int i = 0; i < array.length(); i++) {
             String name = String.valueOf(((JSONObject) array.get(i)).get("name")); //name of currency
             String symbol = String.valueOf(((JSONObject) array.get(i)).get("symbol")); //symbol used on exchanges
@@ -236,29 +257,39 @@ public final class Crypto_api {
             String max_supply = String.valueOf(((JSONObject) array.get(i)).get("max_supply"));
 
             Supply supply = new Supply(max_supply, circulatingSupply, total_supply);
+
             CryptoCurrency currency;
             if (Input.euroIncluded() && !Input.zlotyIncluded()) {
                 currency = new CryptoCurrency.CryptoCurrencyBuilder(name, symbol, price, date_added, supply).
                         setPriceEUR(priceHelperMethod(Convert.fromTo("USD", "EUR", price), "€")).build();
-                ProcessFile.setEuroFlag(true);
-                ProcessFile.process(new File("validate.dtd"), new File("validate_xsd.xsd"));
+                cryptoSet.add(currency);
             } else if (!Input.euroIncluded() && Input.zlotyIncluded()) {
                 currency = new CryptoCurrency.CryptoCurrencyBuilder(name, symbol, price, date_added, supply).
                         setPricePLN(priceHelperMethod(Convert.fromTo("USD", "PLN", price), "zł")).build();
-                ProcessFile.setPlnFlag(true);
-                ProcessFile.process(new File("validate.dtd"), new File("validate_xsd.xsd"));
+                cryptoSet.add(currency);
             } else if (Input.euroIncluded() && Input.zlotyIncluded()) {
                 currency = new CryptoCurrency.CryptoCurrencyBuilder(name, symbol, price, date_added, supply).
                         setPriceEUR(priceHelperMethod(Convert.fromTo("USD", "EUR", price), "€")).
                         setPricePLN(priceHelperMethod(Convert.fromTo("USD", "PLN", price), "zł")).build();
-                ProcessFile.setPlnFlag(true);
-                ProcessFile.setEuroFlag(true);
-                ProcessFile.process(new File("validate.dtd"), new File("validate_xsd.xsd"));
+                cryptoSet.add(currency);
             } else
                 currency = new CryptoCurrency.CryptoCurrencyBuilder(name, symbol, price, date_added, supply).build();
             cryptoSet.add(currency);
         }
-        return cryptoSet;  //method returns the set of CryptoCurrency objects with data retrieved from api
+        ProcessFile processFile=ProcessFile.GetInstance();
+        if (Input.euroIncluded() && Input.zlotyIncluded()) {
+            processFile.setEuroFlag(true);
+            processFile.setPlnFlag(true);
+            cryptoCurrencies = cryptoSet;
+        } else if (Input.euroIncluded() && !Input.zlotyIncluded()) {
+            processFile.setEuroFlag(true);
+            cryptoCurrencies = cryptoSet;
+        } else if (!Input.euroIncluded() && Input.zlotyIncluded()) {
+            processFile.setPlnFlag(true);
+            cryptoCurrencies = cryptoSet;
+        } else
+            cryptoCurrencies = cryptoSet;
+        processFile.process();
     }
 
     private static String priceHelperMethod(String value, String currencySymbol) {
@@ -268,18 +299,17 @@ public final class Crypto_api {
             return new BigDecimal(value).setScale(2, RoundingMode.HALF_UP).toPlainString() + " " + currencySymbol;
     }
 
-    private static String javaToXml() {
+    protected static String javaToXml() {
         // method is resposible for mapping Java objects to one Xml file
         try {
             JAXBContext jaxbContext = JAXBContext.newInstance(CryptoStatistics.class, CryptoCurrency.class);
             Marshaller marshaller = jaxbContext.createMarshaller(); //creating marshaller object
             //marshaller is responsible for mapping Java code back to XML
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-            Set<CryptoCurrency> set = getDataFromApiToPojo();
             StringWriter writer = new StringWriter();
-            marshaller.marshal(CryptoStatistics.valueOf(String.valueOf(set.size()), set), writer);
+            marshaller.marshal(CryptoStatistics.valueOf(String.valueOf(cryptoCurrencies.size()), cryptoCurrencies), writer);
             //xml content is written on StringWriter object
-
+            writer.close();
             return writer.toString();
             //returns string object which contains content ready to save to xml format file
 
@@ -289,7 +319,7 @@ public final class Crypto_api {
         return "";
     }
 
-    private static void createXmlFile() {
+    protected static void createXmlFile() {
         try {
             //creates the xml file
             File xmlFile = new File("prices.xml");
@@ -306,17 +336,6 @@ public final class Crypto_api {
             FileWriter fileWriter = new FileWriter("prices.xml");
             fileWriter.append(doctype);
             fileWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void getDataFromApiToXml() {
-        try {
-            Crypto_api.connection();
-            Crypto_api.getDataFromApiToPojo();
-            Crypto_api.createXmlFile();
-            Crypto_api.javaToXml();
         } catch (IOException e) {
             e.printStackTrace();
         }
